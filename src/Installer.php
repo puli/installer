@@ -107,6 +107,8 @@ HELP;
      * Runs the installer.
      *
      * @param array $argv The console arguments.
+     *
+     * @return int The return status.
      */
     public function run(array $argv)
     {
@@ -115,7 +117,7 @@ HELP;
         if ($this->help) {
             echo self::HELP_TEXT;
 
-            exit(0);
+            return 0;
         }
 
         $ok = $this->validateSystem() && $this->validateOptions();
@@ -130,20 +132,20 @@ HELP;
         }
 
         if ($this->check) {
-            exit($ok ? 0 : 1);
+            return $ok ? 0 : 1;
         }
 
         if ($ok || $this->force) {
-            $this->installPuli();
-
-            exit(0);
+            return $this->installPuli();
         }
 
-        exit(1);
+        return 1;
     }
 
     /**
      * Installs puli to the current working directory.
+     *
+     * @return int The return status.
      *
      * @throws Exception
      */
@@ -192,7 +194,7 @@ HELP;
                         $e->getMessage()
                     ));
 
-                    exit(1);
+                    return 1;
                 }
             }
 
@@ -201,7 +203,8 @@ HELP;
 
         if (0 === $retries) {
             $this->error('The download failed repeatedly, aborting.');
-            exit(1);
+
+            return 1;
         }
 
         chmod($installPath, 0755);
@@ -210,6 +213,8 @@ HELP;
             $this->success(PHP_EOL.'Puli successfully installed to: '.$installPath);
             $this->info('Use it: php '.$installPath);
         }
+
+        return 0;
     }
 
     /**
@@ -595,7 +600,7 @@ HELP;
      */
     private function success($text)
     {
-        printf(USE_ANSI ? "\033[0;32m%s\033[0m" : '%s', $text);
+        printf(USE_ANSI ? "\033[0;32m%s\033[0m" : '%s', $text.PHP_EOL);
     }
 
     /**
@@ -605,7 +610,7 @@ HELP;
      */
     private function error($text)
     {
-        printf(USE_ANSI ? "\033[31;31m%s\033[0m" : '%s', $text);
+        printf(USE_ANSI ? "\033[31;31m%s\033[0m" : '%s', $text.PHP_EOL);
     }
 
     /**
@@ -615,6 +620,6 @@ HELP;
      */
     private function info($text)
     {
-        printf(USE_ANSI ? "\033[33;33m%s\033[0m" : '%s', $text);
+        printf(USE_ANSI ? "\033[33;33m%s\033[0m" : '%s', $text.PHP_EOL);
     }
 }
