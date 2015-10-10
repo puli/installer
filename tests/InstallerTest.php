@@ -70,5 +70,4 @@ EOF;
         $this->assertFileExists($this->rootDir.'/puli.phar');
         $this->assertSame($expected, ob_get_clean());
     }
-
 }
