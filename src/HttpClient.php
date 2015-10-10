@@ -31,7 +31,7 @@ class HttpClient
     /**
      * The ciphers supported for TLS.
      */
-    const CIPHERS = array(
+    private static $ciphers = array(
         'ECDHE-RSA-AES128-GCM-SHA256',
         'ECDHE-ECDSA-AES128-GCM-SHA256',
         'ECDHE-RSA-AES256-GCM-SHA384',
@@ -344,7 +344,7 @@ class HttpClient
         // constructor.
         $options = array(
             'ssl' => array(
-                'ciphers' => implode(':', self::CIPHERS),
+                'ciphers' => implode(':', self::$ciphers),
                 'verify_peer' => true,
                 'verify_depth' => 7,
                 'SNI_enabled' => true,
