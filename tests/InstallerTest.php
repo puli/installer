@@ -66,8 +66,10 @@ Use it: php {$this->rootDir}/puli.phar
 
 EOF;
 
-        $this->assertSame(0, $installer->run(array('--version', '1.0.0-beta9', '--no-ansi')));
-        $this->assertFileExists($this->rootDir.'/puli.phar');
+        $status = $installer->run(array('--version', '1.0.0-beta9', '--no-ansi'));
+
         $this->assertSame($expected, ob_get_clean());
+        $this->assertFileExists($this->rootDir.'/puli.phar');
+        $this->assertSame(0, $status);
     }
 }
