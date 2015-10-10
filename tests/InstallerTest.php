@@ -68,7 +68,7 @@ EOF;
 
         $status = $installer->run(array('--version', '1.0.0-beta9', '--no-ansi'));
 
-        $this->assertSame($expected, ob_get_clean());
+        $this->assertSame(str_replace("\n", PHP_EOL, $expected), ob_get_clean());
         $this->assertFileExists($this->rootDir.'/puli.phar');
         $this->assertSame(0, $status);
     }
