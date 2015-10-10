@@ -152,7 +152,7 @@ HELP;
     private function installPuli()
     {
         $installDir = is_dir($this->installDir) ? realpath($this->installDir) : getcwd();
-        $installPath = $installDir.'/'.$this->filename;
+        $installPath = str_replace('\\', '/', $installDir).'/'.$this->filename;
 
         if (is_readable($installPath)) {
             @unlink($installPath);
