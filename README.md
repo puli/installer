@@ -2,7 +2,7 @@ The Puli Installer
 ==================
 
 [![Build Status](https://travis-ci.org/puli/installer.svg?branch=master)](https://travis-ci.org/puli/installer)
-[![Build status](https://ci.appveyor.com/api/projects/status/n06gckamgc2lr8vl/branch/master?svg=true)](https://ci.appveyor.com/project/webmozart/installer/branch/master)
+[![Build status](https://ci.appveyor.com/api/projects/status/56vtn91rphj8vo67/branch/master?svg=true)](https://ci.appveyor.com/project/webmozart/installer/branch/master)
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/puli/installer/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/puli/installer/?branch=master)
 [![Latest Stable Version](https://poser.pugx.org/puli/installer/v/stable.svg)](https://packagist.org/packages/puli/installer)
 [![Total Downloads](https://poser.pugx.org/puli/installer/downloads.svg)](https://packagist.org/packages/puli/installer)
