@@ -19,4 +19,4 @@ if (file_exists($autoload = __DIR__.'/../../../autoload.php')) {
 }
 
 $installer = new Installer();
-$installer->run();
+$installer->run(is_array($argv) ? $argv : array());
