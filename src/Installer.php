@@ -59,6 +59,16 @@ Options
 HELP;
 
     /**
+     * The api url to determine the available versions of puli
+     */
+    const VERSION_API_URL = '%s://puli.io/versions.json';
+
+    /**
+     * The phar download url
+     */
+    const PHAR_DOWNLOAD_URL = '%s://puli.io/download/%s/puli.phar';
+
+    /**
      * @var bool
      */
     private $check;
@@ -160,8 +170,31 @@ HELP;
 
         $httpClient = new HttpClient($this->disableTls, $this->cafile);
 
+        $versionUrl = sprintf(
+            static::VERSION_API_URL,
+            $this->disableTls ? 'http' : 'https'
+        );
+
+        for ($retries = 3; $retries > 0; --$retries) {
+            if (!($versions = json_decode($httpClient->download($versionUrl), true))) {
+                continue;
+            }
+
+            break;
+        }
+
+        if (0 === $retries) {
+            $this->error('The download failed repeatedly, aborting.');
+
+            return 1;
+        }
+
+        if (null === ($this->version = $this->matchVersion($versions))) {
+            return 1;
+        }
+
         $url = sprintf(
-            '%s://github.com/puli/cli/releases/download/%s/puli.phar',
+            static::PHAR_DOWNLOAD_URL,
             $this->disableTls ? 'http' : 'https',
             $this->version
         );
@@ -215,6 +248,30 @@ HELP;
         }
 
         return 0;
+    }
+
+    /**
+     * Determines which version to use
+     *
+     * @param array     $versions   The available versions
+     *
+     * @return string|null          The version to download or null if no version was found
+     */
+    private function matchVersion(array $versions)
+    {
+        if (false !== $this->version) {
+            if (!in_array($this->version, $versions)) {
+                $this->error(sprintf(
+                    'Could not found version: %s, Aborting.',
+                    $this->version
+                ));
+                return null;
+            }
+
+            return $this->version;
+        }
+
+        return end($versions);
     }
 
     /**
