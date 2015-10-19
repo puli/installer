@@ -191,7 +191,7 @@ HELP;
             break;
         }
 
-        if (0 === $retries) {
+        if (0 === $retries || null === $versions) {
             $this->error('The download failed repeatedly, aborting.');
 
             return 1;
@@ -277,8 +277,8 @@ HELP;
     /**
      * Validates if the passed version is valid.
      *
-     * @param string $version The passed version.
-     * @param array $versions The available versions.
+     * @param string $version  The passed version.
+     * @param array  $versions The available versions.
      *
      * @return bool Whether the version is valid.
      */
@@ -366,7 +366,7 @@ HELP;
     {
         ErrorHandler::register();
 
-        if (! ($versions = $httpClient->download($url))) {
+        if (!($versions = $httpClient->download($url))) {
             $this->error(sprintf(
                 'Download failed: %s',
                 implode(PHP_EOL, ErrorHandler::getErrors())
@@ -376,7 +376,7 @@ HELP;
         }
 
         $versions = json_decode($versions);
-        usort($versions, true);
+        usort($versions, 'version_compare');
 
         ErrorHandler::unregister();
 
@@ -678,7 +678,7 @@ HELP;
             $this->stability = 'stable';
         }
 
-        if (in_array('--unstable', $argv)){
+        if (in_array('--unstable', $argv)) {
             $this->stability = 'unstable';
         }
 
