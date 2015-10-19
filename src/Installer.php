@@ -59,14 +59,19 @@ Options
 HELP;
 
     /**
-     * The api url to determine the available versions of puli
+     * The api url to determine the available versions of puli.
      */
-    const VERSION_API_URL = '%s://puli.io/versions.json';
+    const VERSION_API_URL = '%s://puli.io/download/versions.json';
 
     /**
-     * The phar download url
+     * The phar download url.
      */
     const PHAR_DOWNLOAD_URL = '%s://puli.io/download/%s/puli.phar';
+
+    /**
+     * @var string
+     */
+    private $stability;
 
     /**
      * @var bool
@@ -176,7 +181,9 @@ HELP;
         );
 
         for ($retries = 3; $retries > 0; --$retries) {
-            if (!($versions = json_decode($httpClient->download($versionUrl), true))) {
+            $versions = json_decode($httpClient->download($versionUrl), true);
+
+            if (null === $versions) {
                 continue;
             }
 
@@ -189,8 +196,26 @@ HELP;
             return 1;
         }
 
-        if (null === ($this->version = $this->matchVersion($versions))) {
-            return 1;
+        usort($versions, 'version_compare');
+
+        if (!empty($this->version)) {
+            if (!$this->validateVersion($this->version, $versions)) {
+                $this->error(sprintf(
+                    'Could not found version: %s, Aborting.',
+                    $this->version
+                ));
+
+                return 1;
+            }
+        } elseif ('stable' === $this->stability) {
+            $this->version = $this->getLatestStableVersion($versions);
+            if (null === $this->version) {
+                $this->error('Could not found any stable version, Aborting.');
+
+                return 1;
+            }
+        } else {
+            $this->version = $this->getLatestVersion($versions);
         }
 
         $url = sprintf(
@@ -251,26 +276,45 @@ HELP;
     }
 
     /**
-     * Determines which version to use
+     * Validates if the passed version is valid.
      *
-     * @param array     $versions   The available versions
+     * @param string $version The passed version.
+     * @param array $versions Available versions.
      *
-     * @return string|null          The version to download or null if no version was found
+     * @return bool Whether the version is valid.
      */
-    private function matchVersion(array $versions)
+    private function validateVersion($version, array $versions)
     {
-        if (false !== $this->version) {
-            if (!in_array($this->version, $versions)) {
-                $this->error(sprintf(
-                    'Could not found version: %s, Aborting.',
-                    $this->version
-                ));
-                return null;
-            }
+        return in_array($version, $versions);
+    }
 
-            return $this->version;
+    /**
+     * Returns the last stable version.
+     *
+     * @param array $versions The available versions.
+     *
+     * @return string|null The latest stable version, null if there is no stable version.
+     */
+    private function getLatestStableVersion(array $versions)
+    {
+        foreach (array_reverse($versions) as $version) {
+            if (1 === preg_match('/^\d+\.\d+\.\d+$/', $version)) {
+                return $version;
+            }
         }
 
+        return null;
+    }
+
+    /**
+     * Returns the latest version.
+     *
+     * @param array $versions The available versions.
+     *
+     * @return string The latest version.
+     */
+    private function getLatestVersion(array $versions)
+    {
         return end($versions);
     }
 
@@ -601,6 +645,14 @@ HELP;
         $this->version = false;
         $this->filename = 'puli.phar';
         $this->cafile = false;
+        $this->stability = 'unstable';
+        if (in_array('--stable', $argv)) {
+            $this->stability = 'stable';
+        }
+
+        if (in_array('--unstable', $argv)){
+            $this->stability = 'unstable';
+        }
 
         // --no-ansi wins over --ansi
         if (in_array('--no-ansi', $argv)) {
