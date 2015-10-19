@@ -674,12 +674,8 @@ HELP;
         $this->filename = 'puli.phar';
         $this->cafile = false;
         $this->stability = 'unstable';
-        if (in_array('--stable', $argv)) {
+        if (in_array('--prefer-stable', $argv)) {
             $this->stability = 'stable';
-        }
-
-        if (in_array('--unstable', $argv)) {
-            $this->stability = 'unstable';
         }
 
         // --no-ansi wins over --ansi
