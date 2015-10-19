@@ -180,8 +180,9 @@ HELP;
             $this->disableTls ? 'http' : 'https'
         );
 
+        $versions = array();
         for ($retries = 3; $retries > 0; --$retries) {
-            $versions = json_decode($httpClient->download($versionUrl), true);
+            $versions = $this->downloadVersions($httpClient, $versionUrl);
 
             if (null === $versions) {
                 continue;
@@ -195,8 +196,6 @@ HELP;
 
             return 1;
         }
-
-        usort($versions, 'version_compare');
 
         if (!empty($this->version)) {
             if (!$this->validateVersion($this->version, $versions)) {
@@ -279,7 +278,7 @@ HELP;
      * Validates if the passed version is valid.
      *
      * @param string $version The passed version.
-     * @param array $versions Available versions.
+     * @param array $versions The available versions.
      *
      * @return bool Whether the version is valid.
      */
@@ -353,6 +352,35 @@ HELP;
         ErrorHandler::unregister();
 
         return !ErrorHandler::hasErrors();
+    }
+
+    /**
+     * Downloads the available puli versions.
+     *
+     * @param HttpClient $httpClient The client to use.
+     * @param string     $url        The URL to download.
+     *
+     * @return array|null The available versions, null if the download failed.
+     */
+    public function downloadVersions(HttpClient $httpClient, $url)
+    {
+        ErrorHandler::register();
+
+        if (! ($versions = $httpClient->download($url))) {
+            $this->error(sprintf(
+                'Download failed: %s',
+                implode(PHP_EOL, ErrorHandler::getErrors())
+            ));
+
+            return null;
+        }
+
+        $versions = json_decode($versions);
+        usort($versions, true);
+
+        ErrorHandler::unregister();
+
+        return $versions;
     }
 
     /**
