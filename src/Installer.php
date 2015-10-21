@@ -12,6 +12,7 @@
 namespace Puli\Installer;
 
 use Exception;
+use Humbug\SelfUpdate\VersionParser;
 use Phar;
 use PharException;
 use UnexpectedValueException;
@@ -197,8 +198,9 @@ HELP;
             return 1;
         }
 
+        $versionParser = new VersionParser($versions);
         if (!empty($this->version)) {
-            if (!$this->validateVersion($this->version, $versions)) {
+            if (!in_array($this->version, $versions, true)) {
                 $this->error(sprintf(
                     'Could not found version: %s, Aborting.',
                     $this->version
@@ -207,14 +209,14 @@ HELP;
                 return 1;
             }
         } elseif ('stable' === $this->stability) {
-            $this->version = $this->getLatestStableVersion($versions);
-            if (null === $this->version) {
+            $this->version = $versionParser->getMostRecentStable();
+            if (false === $this->version) {
                 $this->error('Could not found any stable version, Aborting.');
 
                 return 1;
             }
         } else {
-            $this->version = $this->getLatestVersion($versions);
+            $this->version = $versionParser->getMostRecentAll();
         }
 
         $url = sprintf(
@@ -272,49 +274,6 @@ HELP;
         }
 
         return 0;
-    }
-
-    /**
-     * Validates if the passed version is valid.
-     *
-     * @param string $version  The passed version.
-     * @param array  $versions The available versions.
-     *
-     * @return bool Whether the version is valid.
-     */
-    private function validateVersion($version, array $versions)
-    {
-        return in_array($version, $versions);
-    }
-
-    /**
-     * Returns the last stable version.
-     *
-     * @param array $versions The available versions.
-     *
-     * @return string|null The latest stable version, null if there is no stable version.
-     */
-    private function getLatestStableVersion(array $versions)
-    {
-        foreach (array_reverse($versions) as $version) {
-            if (1 === preg_match('/^\d+\.\d+\.\d+$/', $version)) {
-                return $version;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Returns the latest version.
-     *
-     * @param array $versions The available versions.
-     *
-     * @return string The latest version.
-     */
-    private function getLatestVersion(array $versions)
-    {
-        return end($versions);
     }
 
     /**
