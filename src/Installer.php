@@ -12,6 +12,7 @@
 namespace Puli\Installer;
 
 use Exception;
+use RuntimeException;
 use Humbug\SelfUpdate\VersionParser;
 use Phar;
 use PharException;
@@ -183,16 +184,17 @@ HELP;
 
         $versions = array();
         for ($retries = 3; $retries > 0; --$retries) {
-            $versions = $this->downloadVersions($httpClient, $versionUrl);
-
-            if (null === $versions) {
+            try {
+                $versions = $this->downloadVersions($httpClient, $versionUrl);
+            } catch (RuntimeException $e) {
+                $this->error($e->getMessage());
                 continue;
             }
 
             break;
         }
 
-        if (0 === $retries || null === $versions) {
+        if (0 === $retries || empty($versions)) {
             $this->error('The download failed repeatedly, aborting.');
 
             return 1;
@@ -202,7 +204,7 @@ HELP;
         if (!empty($this->version)) {
             if (!in_array($this->version, $versions, true)) {
                 $this->error(sprintf(
-                    'Could not found version: %s, Aborting.',
+                    'Could not find version: %s.',
                     $this->version
                 ));
 
@@ -211,7 +213,7 @@ HELP;
         } elseif ('stable' === $this->stability) {
             $this->version = $versionParser->getMostRecentStable();
             if (false === $this->version) {
-                $this->error('Could not found any stable version, Aborting.');
+                $this->error('Could not find a stable version.');
 
                 return 1;
             }
@@ -320,18 +322,21 @@ HELP;
      * @param string     $url        The URL to download.
      *
      * @return array|null The available versions, null if the download failed.
+     *
+     * @throws RuntimeException If an error occurs.
      */
     public function downloadVersions(HttpClient $httpClient, $url)
     {
         ErrorHandler::register();
 
-        if (!($versions = $httpClient->download($url))) {
-            $this->error(sprintf(
-                'Download failed: %s',
-                implode(PHP_EOL, ErrorHandler::getErrors())
-            ));
+        $versions = $httpClient->download($url);
 
-            return null;
+        if (ErrorHandler::hasErrors()) {
+            throw new RuntimeException(sprintf(
+                "Could not download %s:\n%s",
+                $url,
+                implode("\n", ErrorHandler::getErrors())
+            ));
         }
 
         $versions = json_decode($versions);
@@ -633,7 +638,7 @@ HELP;
         $this->filename = 'puli.phar';
         $this->cafile = false;
         $this->stability = 'unstable';
-        if (in_array('--prefer-stable', $argv)) {
+        if (in_array('--stable', $argv)) {
             $this->stability = 'stable';
         }
 
