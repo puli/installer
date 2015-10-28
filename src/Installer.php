@@ -182,6 +182,10 @@ HELP;
             $this->disableTls ? 'http' : 'https'
         );
 
+        if (!$this->quiet) {
+            $this->info('Downloading...');
+        }
+
         $versions = array();
         for ($retries = 3; $retries > 0; --$retries) {
             try {
@@ -226,10 +230,6 @@ HELP;
         );
 
         for ($retries = 3; $retries > 0; --$retries) {
-            if (!$this->quiet) {
-                $this->info('Downloading...');
-            }
-
             if (!$this->downloadFile($httpClient, $url, $installPath)) {
                 continue;
             }
