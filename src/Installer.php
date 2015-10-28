@@ -12,10 +12,10 @@
 namespace Puli\Installer;
 
 use Exception;
-use RuntimeException;
 use Humbug\SelfUpdate\VersionParser;
 use Phar;
 use PharException;
+use RuntimeException;
 use UnexpectedValueException;
 
 /**
@@ -186,12 +186,10 @@ HELP;
         for ($retries = 3; $retries > 0; --$retries) {
             try {
                 $versions = $this->downloadVersions($httpClient, $versionUrl);
+                break;
             } catch (RuntimeException $e) {
                 $this->error($e->getMessage());
-                continue;
             }
-
-            break;
         }
 
         if (0 === $retries || empty($versions)) {
@@ -321,15 +319,15 @@ HELP;
      * @param HttpClient $httpClient The client to use.
      * @param string     $url        The URL to download.
      *
-     * @return array|null The available versions, null if the download failed.
+     * @return array The available versions, null if the download failed.
      *
      * @throws RuntimeException If an error occurs.
      */
     public function downloadVersions(HttpClient $httpClient, $url)
     {
         ErrorHandler::register();
-
         $versions = $httpClient->download($url);
+        ErrorHandler::unregister();
 
         if (ErrorHandler::hasErrors()) {
             throw new RuntimeException(sprintf(
@@ -340,9 +338,15 @@ HELP;
         }
 
         $versions = json_decode($versions);
-        usort($versions, 'version_compare');
+        if (json_last_error() !== JSON_ERROR_NONE || !is_array($versions)) {
+            throw new RuntimeException(sprintf(
+                "Could not download %s:\n%s",
+                $url,
+                'Malformed JSON returned.'
+            ));
+        }
 
-        ErrorHandler::unregister();
+        usort($versions, 'version_compare');
 
         return $versions;
     }
