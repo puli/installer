@@ -20,6 +20,8 @@ use Symfony\Component\Filesystem\Filesystem;
  */
 class InstallerTest extends PHPUnit_Framework_TestCase
 {
+    private $workingDir;
+
     private $tempDir;
 
     private $homeDir;
@@ -31,24 +33,28 @@ class InstallerTest extends PHPUnit_Framework_TestCase
         $this->tempDir = TestUtil::makeTempDir('puli-installer', __CLASS__);
         $this->homeDir = $this->tempDir.'/home';
         $this->rootDir = $this->tempDir.'/root';
+        $this->workingDir = getcwd();
 
         mkdir($this->homeDir);
         mkdir($this->rootDir);
 
         putenv('PULI_HOME='.$this->homeDir);
+
         chdir($this->rootDir);
 
         // Remove env variables, just to make sure...
-        putenv('APPDATA');
-        putenv('HOME');
+        putenv('APPDATA=');
+        putenv('HOME=');
     }
 
     protected function tearDown()
     {
+        chdir($this->workingDir);
+
         $filesystem = new Filesystem();
         $filesystem->remove($this->tempDir);
 
-        putenv('PULI_HOME');
+        putenv('PULI_HOME=');
     }
 
     public function testInstallWithVersion()
