@@ -114,7 +114,7 @@ EOF;
         $expected = <<<EOF
 All settings correct for using Puli
 Downloading available versions...
-Could not find a stable version.
+Fatal: Could not find a stable version.
 
 EOF;
 

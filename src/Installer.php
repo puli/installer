@@ -197,7 +197,7 @@ HELP;
         }
 
         if (0 === $retries || empty($versions)) {
-            $this->error('The download failed repeatedly, aborting.');
+            $this->error('Fatal: The download failed repeatedly, aborting.');
 
             return 1;
         }
@@ -206,7 +206,7 @@ HELP;
         if (!empty($this->version)) {
             if (!in_array($this->version, $versions, true)) {
                 $this->error(sprintf(
-                    'Could not find version: %s.',
+                    'Fatal: Could not find version: %s.',
                     $this->version
                 ));
 
@@ -215,7 +215,7 @@ HELP;
         } elseif ('stable' === $this->stability) {
             $this->version = $versionParser->getMostRecentStable();
             if (false === $this->version) {
-                $this->error('Could not find a stable version.');
+                $this->error('Fatal: Could not find a stable version.');
 
                 return 1;
             }
@@ -256,7 +256,7 @@ HELP;
                     }
                 } else {
                     $this->error(sprintf(
-                        'The download is corrupt (%s), aborting.',
+                        'Fatal: The download is corrupt (%s), aborting.',
                         $e->getMessage()
                     ));
 
@@ -268,7 +268,7 @@ HELP;
         }
 
         if (0 === $retries) {
-            $this->error('The download failed repeatedly, aborting.');
+            $this->error('Fatal: The download failed repeatedly, aborting.');
 
             return 1;
         }
