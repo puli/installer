@@ -182,12 +182,12 @@ HELP;
             $this->disableTls ? 'http' : 'https'
         );
 
-        if (!$this->quiet) {
-            $this->info('Downloading...');
-        }
-
         $versions = array();
         for ($retries = 3; $retries > 0; --$retries) {
+            if (!$this->quiet) {
+                $this->info('Downloading available versions...');
+            }
+
             try {
                 $versions = $this->downloadVersions($httpClient, $versionUrl);
                 break;
@@ -230,6 +230,13 @@ HELP;
         );
 
         for ($retries = 3; $retries > 0; --$retries) {
+            if (!$this->quiet) {
+                $this->info(sprintf(
+                    'Downloading puli.phar at version %s...',
+                    $this->version)
+                );
+            }
+
             if (!$this->downloadFile($httpClient, $url, $installPath)) {
                 continue;
             }

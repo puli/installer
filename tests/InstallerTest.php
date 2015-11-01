@@ -67,7 +67,8 @@ class InstallerTest extends PHPUnit_Framework_TestCase
 
         $expected = <<<EOF
 All settings correct for using Puli
-Downloading...
+Downloading available versions...
+Downloading puli.phar at version 1.0.0-beta9...
 
 Puli successfully installed to: {$this->rootDir}/puli.phar
 Use it: php {$this->rootDir}/puli.phar
@@ -89,7 +90,8 @@ EOF;
 
         $expected = <<<EOF
 All settings correct for using Puli
-Downloading...
+Downloading available versions...
+Downloading puli.phar at version %s...
 
 Puli successfully installed to: {$this->rootDir}/puli.phar
 Use it: php {$this->rootDir}/puli.phar
@@ -98,7 +100,7 @@ EOF;
 
         $status = $installer->run(array('--no-ansi'));
 
-        $this->assertSame(str_replace("\n", PHP_EOL, $expected), ob_get_clean());
+        $this->assertStringMatchesFormat(str_replace("\n", PHP_EOL, $expected), ob_get_clean());
         $this->assertFileExists($this->rootDir.'/puli.phar');
         $this->assertSame(0, $status);
     }
@@ -111,7 +113,7 @@ EOF;
 
         $expected = <<<EOF
 All settings correct for using Puli
-Downloading...
+Downloading available versions...
 Could not find a stable version.
 
 EOF;
