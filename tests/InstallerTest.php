@@ -71,7 +71,7 @@ Downloading available versions...
 Downloading puli.phar at version 1.0.0-beta9...
 
 Puli successfully installed to: {$this->rootDir}/puli.phar
-Use it: php {$this->rootDir}/puli.phar
+Use it: php puli.phar
 
 EOF;
 
@@ -94,7 +94,7 @@ Downloading available versions...
 Downloading puli.phar at version %s...
 
 Puli successfully installed to: {$this->rootDir}/puli.phar
-Use it: php {$this->rootDir}/puli.phar
+Use it: php puli.phar
 
 EOF;
 
@@ -109,6 +109,64 @@ EOF;
         $this->assertSame(0, $status);
     }
 
+    public function testInstallWithAbsoluteInstallDir()
+    {
+        mkdir($this->tempDir.'/install-dir');
+
+        $installer = new Installer();
+
+        ob_start();
+
+        $expected = <<<EOF
+All settings correct for using Puli
+Downloading available versions...
+Downloading puli.phar at version %s...
+
+Puli successfully installed to: {$this->tempDir}/install-dir/puli.phar
+Use it: php {$this->tempDir}/install-dir/puli.phar
+
+EOF;
+
+        $status = $installer->run(array('--no-ansi', '--install-dir', $this->tempDir.'/install-dir'));
+
+        $actual = ob_get_clean();
+        list($start, $end) = explode('%s', str_replace("\n", PHP_EOL, $expected));
+
+        $this->assertStringStartsWith($start, $actual);
+        $this->assertStringEndsWith($end, $actual);
+        $this->assertFileExists($this->tempDir.'/install-dir/puli.phar');
+        $this->assertSame(0, $status);
+    }
+
+    public function testInstallWithRelativeInstallDir()
+    {
+        mkdir($this->tempDir.'/install-dir');
+
+        $installer = new Installer();
+
+        ob_start();
+
+        $expected = <<<EOF
+All settings correct for using Puli
+Downloading available versions...
+Downloading puli.phar at version %s...
+
+Puli successfully installed to: {$this->tempDir}/install-dir/puli.phar
+Use it: php {$this->tempDir}/install-dir/puli.phar
+
+EOF;
+
+        $status = $installer->run(array('--no-ansi', '--install-dir', '../install-dir'));
+
+        $actual = ob_get_clean();
+        list($start, $end) = explode('%s', str_replace("\n", PHP_EOL, $expected));
+
+        $this->assertStringStartsWith($start, $actual);
+        $this->assertStringEndsWith($end, $actual);
+        $this->assertFileExists($this->tempDir.'/install-dir/puli.phar');
+        $this->assertSame(0, $status);
+    }
+
     public function testInstallStableIsNotPossible()
     {
         $installer = new Installer();
@@ -118,7 +176,7 @@ EOF;
         $expected = <<<EOF
 All settings correct for using Puli
 Downloading available versions...
-Fatal: Could not find a stable version.
+fatal: Could not find a stable version.
 
 EOF;
 
