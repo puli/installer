@@ -338,18 +338,17 @@ HELP;
 
         if (ErrorHandler::hasErrors()) {
             throw new RuntimeException(sprintf(
-                "Could not download %s:\n%s",
+                'Could not download %s:'.PHP_EOL.'%s',
                 $url,
-                implode("\n", ErrorHandler::getErrors())
+                implode(PHP_EOL, ErrorHandler::getErrors())
             ));
         }
 
         $versions = json_decode($versions);
         if (json_last_error() !== JSON_ERROR_NONE || !is_array($versions)) {
             throw new RuntimeException(sprintf(
-                "Could not download %s:\n%s",
-                $url,
-                'Malformed JSON returned.'
+                'Could not download %s:'.PHP_EOL.'Malformed JSON returned.',
+                $url
             ));
         }
 
