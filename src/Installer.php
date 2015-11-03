@@ -12,8 +12,10 @@
 namespace Puli\Installer;
 
 use Exception;
+use Humbug\SelfUpdate\VersionParser;
 use Phar;
 use PharException;
+use RuntimeException;
 use UnexpectedValueException;
 
 /**
@@ -57,6 +59,21 @@ Options
 --cafile="..."       set the path to a Certificate Authority (CA) certificate file for SSL/TLS verification
 
 HELP;
+
+    /**
+     * The api url to determine the available versions of puli.
+     */
+    const VERSION_API_URL = '%s://puli.io/download/versions.json';
+
+    /**
+     * The phar download url.
+     */
+    const PHAR_DOWNLOAD_URL = '%s://puli.io/download/%s/puli.phar';
+
+    /**
+     * @var string
+     */
+    private $stability;
 
     /**
      * @var bool
@@ -160,15 +177,64 @@ HELP;
 
         $httpClient = new HttpClient($this->disableTls, $this->cafile);
 
+        $versionUrl = sprintf(
+            static::VERSION_API_URL,
+            $this->disableTls ? 'http' : 'https'
+        );
+
+        $versions = array();
+        for ($retries = 3; $retries > 0; --$retries) {
+            if (!$this->quiet) {
+                $this->info('Downloading available versions...');
+            }
+
+            try {
+                $versions = $this->downloadVersions($httpClient, $versionUrl);
+                break;
+            } catch (RuntimeException $e) {
+                $this->error($e->getMessage());
+            }
+        }
+
+        if (0 === $retries || empty($versions)) {
+            $this->error('Fatal: The download failed repeatedly, aborting.');
+
+            return 1;
+        }
+
+        $versionParser = new VersionParser($versions);
+        if (!empty($this->version)) {
+            if (!in_array($this->version, $versions, true)) {
+                $this->error(sprintf(
+                    'Fatal: Could not find version: %s.',
+                    $this->version
+                ));
+
+                return 1;
+            }
+        } elseif ('stable' === $this->stability) {
+            $this->version = $versionParser->getMostRecentStable();
+            if (false === $this->version) {
+                $this->error('Fatal: Could not find a stable version.');
+
+                return 1;
+            }
+        } else {
+            $this->version = $versionParser->getMostRecentAll();
+        }
+
         $url = sprintf(
-            '%s://github.com/puli/cli/releases/download/%s/puli.phar',
+            static::PHAR_DOWNLOAD_URL,
             $this->disableTls ? 'http' : 'https',
             $this->version
         );
 
         for ($retries = 3; $retries > 0; --$retries) {
             if (!$this->quiet) {
-                $this->info('Downloading...');
+                $this->info(sprintf(
+                    'Downloading puli.phar at version %s...',
+                    $this->version)
+                );
             }
 
             if (!$this->downloadFile($httpClient, $url, $installPath)) {
@@ -190,7 +256,7 @@ HELP;
                     }
                 } else {
                     $this->error(sprintf(
-                        'The download is corrupt (%s), aborting.',
+                        'Fatal: The download is corrupt (%s), aborting.',
                         $e->getMessage()
                     ));
 
@@ -202,7 +268,7 @@ HELP;
         }
 
         if (0 === $retries) {
-            $this->error('The download failed repeatedly, aborting.');
+            $this->error('Fatal: The download failed repeatedly, aborting.');
 
             return 1;
         }
@@ -252,6 +318,43 @@ HELP;
         ErrorHandler::unregister();
 
         return !ErrorHandler::hasErrors();
+    }
+
+    /**
+     * Downloads the available puli versions.
+     *
+     * @param HttpClient $httpClient The client to use.
+     * @param string     $url        The URL to download.
+     *
+     * @return array The available versions, null if the download failed.
+     *
+     * @throws RuntimeException If an error occurs.
+     */
+    public function downloadVersions(HttpClient $httpClient, $url)
+    {
+        ErrorHandler::register();
+        $versions = $httpClient->download($url);
+        ErrorHandler::unregister();
+
+        if (ErrorHandler::hasErrors()) {
+            throw new RuntimeException(sprintf(
+                'Could not download %s:'.PHP_EOL.'%s',
+                $url,
+                implode(PHP_EOL, ErrorHandler::getErrors())
+            ));
+        }
+
+        $versions = json_decode($versions);
+        if (json_last_error() !== JSON_ERROR_NONE || !is_array($versions)) {
+            throw new RuntimeException(sprintf(
+                'Could not download %s:'.PHP_EOL.'Malformed JSON returned.',
+                $url
+            ));
+        }
+
+        usort($versions, 'version_compare');
+
+        return $versions;
     }
 
     /**
@@ -544,6 +647,10 @@ HELP;
         $this->version = false;
         $this->filename = 'puli.phar';
         $this->cafile = false;
+        $this->stability = 'unstable';
+        if (in_array('--stable', $argv)) {
+            $this->stability = 'stable';
+        }
 
         // --no-ansi wins over --ansi
         if (in_array('--no-ansi', $argv)) {

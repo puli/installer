@@ -17,6 +17,8 @@ use Symfony\Component\Filesystem\Filesystem;
 
 /**
  * @author Bernhard Schussek <bschussek@gmail.com>
+ *
+ * @runTestsInSeparateProcesses
  */
 class InstallerTest extends PHPUnit_Framework_TestCase
 {
@@ -65,7 +67,8 @@ class InstallerTest extends PHPUnit_Framework_TestCase
 
         $expected = <<<EOF
 All settings correct for using Puli
-Downloading...
+Downloading available versions...
+Downloading puli.phar at version 1.0.0-beta9...
 
 Puli successfully installed to: {$this->rootDir}/puli.phar
 Use it: php {$this->rootDir}/puli.phar
@@ -77,5 +80,52 @@ EOF;
         $this->assertSame(str_replace("\n", PHP_EOL, $expected), ob_get_clean());
         $this->assertFileExists($this->rootDir.'/puli.phar');
         $this->assertSame(0, $status);
+    }
+
+    public function testInstallWithoutVersion()
+    {
+        $installer = new Installer();
+
+        ob_start();
+
+        $expected = <<<EOF
+All settings correct for using Puli
+Downloading available versions...
+Downloading puli.phar at version %s...
+
+Puli successfully installed to: {$this->rootDir}/puli.phar
+Use it: php {$this->rootDir}/puli.phar
+
+EOF;
+
+        $status = $installer->run(array('--no-ansi'));
+
+        $actual = ob_get_clean();
+        list($start, $end) = explode('%s', str_replace("\n", PHP_EOL, $expected));
+
+        $this->assertStringStartsWith($start, $actual);
+        $this->assertStringEndsWith($end, $actual);
+        $this->assertFileExists($this->rootDir.'/puli.phar');
+        $this->assertSame(0, $status);
+    }
+
+    public function testInstallStableIsNotPossible()
+    {
+        $installer = new Installer();
+
+        ob_start();
+
+        $expected = <<<EOF
+All settings correct for using Puli
+Downloading available versions...
+Fatal: Could not find a stable version.
+
+EOF;
+
+        $status = $installer->run(array('--stable'));
+
+        $this->assertSame(str_replace("\n", PHP_EOL, $expected), ob_get_clean());
+        $this->assertFileNotExists($this->rootDir.'/puli.phar');
+        $this->assertSame(1, $status);
     }
 }
