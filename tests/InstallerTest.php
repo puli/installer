@@ -100,7 +100,11 @@ EOF;
 
         $status = $installer->run(array('--no-ansi'));
 
-        $this->assertStringMatchesFormat(str_replace("\n", PHP_EOL, $expected), ob_get_clean());
+        $actual = ob_get_clean();
+        list($start, $end) = explode('%s', str_replace("\n", PHP_EOL, $expected));
+
+        $this->assertStringStartsWith($start, $actual);
+        $this->assertStringEndsWith($end, $actual);
         $this->assertFileExists($this->rootDir.'/puli.phar');
         $this->assertSame(0, $status);
     }
