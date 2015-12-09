@@ -55,20 +55,18 @@ Options
 --install-dir="..."  set the target installation directory
 --version="..."      install a specific version
 --filename="..."     set the target filename (default: puli.phar)
---disable-tls        disable SSL/TLS security for file downloads
---cafile="..."       set the path to a Certificate Authority (CA) certificate file for SSL/TLS verification
 
 HELP;
 
     /**
      * The api url to determine the available versions of puli.
      */
-    const VERSION_API_URL = '%s://puli.io/download/versions.json';
+    const VERSION_API_URL = 'https://puli.io/download/versions.json';
 
     /**
      * The phar download url.
      */
-    const PHAR_DOWNLOAD_URL = '%s://puli.io/download/%s/puli.phar';
+    const PHAR_DOWNLOAD_URL = 'https://puli.io/download/%s/puli.phar';
 
     /**
      * @var string
@@ -96,11 +94,6 @@ HELP;
     private $quiet;
 
     /**
-     * @var bool
-     */
-    private $disableTls;
-
-    /**
      * @var string
      */
     private $installDir;
@@ -114,11 +107,6 @@ HELP;
      * @var string
      */
     private $filename;
-
-    /**
-     * @var string
-     */
-    private $cafile;
 
     /**
      * Runs the installer.
@@ -138,15 +126,6 @@ HELP;
         }
 
         $ok = $this->validateSystem() && $this->validateOptions();
-
-        if ($this->disableTls) {
-            $this->info(
-                'You have instructed the Installer not to enforce SSL/TLS '.
-                'security on remote HTTPS requests.'.PHP_EOL.
-                'This will leave all downloads during installation vulnerable '.
-                'to Man-In-The-Middle (MITM) attacks.'
-            );
-        }
 
         if ($this->check) {
             return $ok ? 0 : 1;
@@ -182,12 +161,7 @@ HELP;
             @unlink($installPath);
         }
 
-        $httpClient = new HttpClient($this->disableTls, $this->cafile);
-
-        $versionUrl = sprintf(
-            static::VERSION_API_URL,
-            $this->disableTls ? 'http' : 'https'
-        );
+        $httpClient = new HttpClient();
 
         $versions = array();
         for ($retries = 3; $retries > 0; --$retries) {
@@ -196,7 +170,7 @@ HELP;
             }
 
             try {
-                $versions = $this->downloadVersions($httpClient, $versionUrl);
+                $versions = $this->downloadVersions($httpClient, static::VERSION_API_URL);
                 break;
             } catch (RuntimeException $e) {
                 $this->error($e->getMessage());
@@ -232,7 +206,6 @@ HELP;
 
         $url = sprintf(
             static::PHAR_DOWNLOAD_URL,
-            $this->disableTls ? 'http' : 'https',
             $this->version
         );
 
@@ -460,9 +433,7 @@ HELP;
             $errors['php'] = PHP_VERSION;
         }
 
-        if (!extension_loaded('openssl') && $this->disableTls) {
-            $warnings['openssl'] = true;
-        } elseif (!extension_loaded('openssl')) {
+        if (!extension_loaded('openssl')) {
             $errors['openssl'] = true;
         }
 
@@ -626,15 +597,6 @@ HELP;
             $ok = false;
         }
 
-        if (false !== $this->cafile && (!file_exists($this->cafile) || !is_readable($this->cafile))) {
-            $this->info(sprintf(
-                'The defined Certificate Authority (CA) cert file (%s) does '.
-                'not exist or is not readable.',
-                $this->cafile
-            ));
-            $ok = false;
-        }
-
         return $ok;
     }
 
@@ -649,11 +611,9 @@ HELP;
         $this->help = in_array('--help', $argv);
         $this->force = in_array('--force', $argv);
         $this->quiet = in_array('--quiet', $argv);
-        $this->disableTls = in_array('--disable-tls', $argv);
         $this->installDir = false;
         $this->version = false;
         $this->filename = 'puli.phar';
-        $this->cafile = false;
         $this->stability = 'unstable';
         if (in_array('--stable', $argv)) {
             $this->stability = 'stable';
@@ -694,14 +654,6 @@ HELP;
                     $this->filename = trim($argv[$key + 1]);
                 } else {
                     $this->filename = trim(substr($val, 11));
-                }
-            }
-
-            if (0 === strpos($val, '--cafile')) {
-                if (8 === strlen($val) && isset($argv[$key + 1])) {
-                    $this->cafile = trim($argv[$key + 1]);
-                } else {
-                    $this->cafile = trim(substr($val, 9));
                 }
             }
         }
