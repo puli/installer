@@ -42,7 +42,7 @@ class Installer
     /**
      * The help text of the installer.
      */
-    const HELP_TEXT = <<<HELP
+    const HELP_TEXT = <<<'HELP'
 Puli Installer
 --------------
 Options
