@@ -173,7 +173,7 @@ EOF;
 
         ob_start();
 
-        $expected = <<<EOF
+        $expected = <<<'EOF'
 All settings correct for using Puli
 Downloading available versions...
 fatal: Could not find a stable version.
